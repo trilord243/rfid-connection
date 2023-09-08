@@ -15,6 +15,7 @@ export async function GET(req, res) {
   /*  startScanner();
   stopScanner(); */
   startScanner();
+
   //stopScanner();
 
   return NextResponse.json({ message: "Hello Get" });
@@ -30,43 +31,45 @@ export async function POST(req, res) {
     const idHex = body[0].data.idHex;
     const antenna = body[0].data.antenna;
 
-    console.log(antenna, idHex);
-    console.log(data);
+    console.log(antenna, idHex, body[0].timestamp);
+    //console.log(data);
 
-    // Comprobar si existe una fila con idHex coincidente
+    // Comprobar si existe una fila con idHex y antenna coincidentes
     const matchingRow = data.find((row) => row.id === idHex);
 
     if (matchingRow) {
-      let locationToUpdate;
-
-      // Usar un switch para asignar el valor de location en función del valor de antenna
+      let newLocation = "";
       switch (antenna) {
         case 1:
-          locationToUpdate = "escritorio";
+          newLocation = "escritorio";
           break;
         case 2:
-          locationToUpdate = "escritorio";
+          newLocation = "entrada";
           break;
         case 3:
-          locationToUpdate = "closet";
+          newLocation = "closet";
           break;
         case 4:
-          locationToUpdate = "bano";
+          newLocation = "bano";
           break;
         default:
-          return NextResponse.json({ message: "Invalid antenna value" });
+          return NextResponse.json({ message: "Antenna not supported" });
       }
 
-      // Actualizar la ubicación para la fila que coincida
-      await conn.query("UPDATE clothes SET location = ? WHERE id = ?", [
-        locationToUpdate,
-        idHex,
-      ]);
-      return NextResponse.json({ message: "Location updated!" });
+      // Si la ubicación ya es la misma, no hacer nada
+      if (matchingRow.location !== newLocation) {
+        await conn.query("UPDATE clothes SET location = ? WHERE id = ?", [
+          newLocation,
+          idHex,
+        ]);
+        return NextResponse.json({ message: "Location updated!" });
+      } else {
+        return NextResponse.json({
+          message: "Location is already set to the desired value.",
+        });
+      }
     } else {
-      return NextResponse.json({
-        message: "Matching row not found",
-      });
+      return NextResponse.json({ message: "Matching row not found." });
     }
   } catch (error) {
     console.error("Error:", error);
